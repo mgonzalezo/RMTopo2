@@ -1,18 +1,19 @@
 from flask import render_template,url_for, flash, redirect
-from webapp import app
+from webapp import app, db, bcrypt
 from webapp.forms import LoginForm, RegistrationForm
 from webapp.models import User,Post
+from flask_login import login_user, current_user, logout_user
 
 posts = [
     {
-        'author' : 'Corey',
-        'title' : 'Blog Post',
+        'author' : 'PS Core',
+        'title' : 'First Topology',
         'content': 'First Post Content',
         'date_posted': 'April 20, 2018'
     },
     {
-        'author' : 'Marco',
-        'title' : 'Updated Blog Post',
+        'author' : 'IMS',
+        'title' : 'Second Topology',
         'content': 'Second Post Content',
         'date_posted': 'April 21, 2018'
     }
@@ -34,19 +35,38 @@ def about():
 
 @app.route("/register", methods =['GET','POST'])
 def register():
+    if current_user.is_authenticated():
+        return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        flash(f'Account created for {form.username.data}!', 'Success')
-        return redirect(url_for('home'))
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+        user = User(username= form.username.data, email=form.email.data, password=hashed_password)
+        db.session.add(user)
+        db.session.commit()
+        flash(f' Your account {form.username.data} has been created! You are now able to log in', 'Success')
+        return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
+
 
 @app.route("/login", methods =['GET','POST'])
 def login():
+    if current_user.is_authenticated():
+        return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
-        if form.email.data == 'admin@blog.com' and form.password.data == 'password':
-            flash('You have logged in', 'Success')
+    #     if form.email.data == 'marco@rakuten.com' and form.password.data == '123':
+    #         flash('You have logged in', 'Success')
+    #         return redirect(url_for('home'))
+    #     else:
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and bcrypt.check_password_hash(user.password, form.password.data):
+            login_user(user, remember = form.remember.data)
             return redirect(url_for('home'))
         else:
-            flash('Login Unsuccessful. Please check username and password', 'danger')
+            flash('Login Unsuccessful. Please check email and/or password', 'danger')
     return render_template('login.html', title='Login', form=form)
+
+@app.route("/logout")
+def logout():
+    logout.user()
+    return redirect(url_for('home'))
