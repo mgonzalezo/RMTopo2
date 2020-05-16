@@ -9,5 +9,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
+#login view to force to login to access account view
+login_manager.login_view = 'login'
+#info style to show messages based on bootstrap design
+login_manager.login_message_category = 'info'
 
 from webapp import routes
